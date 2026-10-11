@@ -19,3 +19,39 @@ Run `uat doctor` first. A missing executable affects only commands that need it.
 **Missing native symbols:** stripped `.so` files may have only exported dynamic symbols. Use LLVM objdump for cross-architecture disassembly. Search presets find strings and markers; they cannot recover removed symbol names.
 
 **Engine tools:** desktop PE executables and Windows game signatures do not directly support Android ELF/ARM64 apps. IL2CPP and Unreal versions vary. A module memory snapshot includes relocated/runtime data and is not a rebuilt native library.
+
+## Expired TermuxBlack repository
+
+If the installer stops at `pkg update` with `EXPKEYSIG` and a URL containing `hax4us.github.io/TermuxBlack`, the signing key for that third-party repository has expired. The package manager refuses the update, and the installer exits before installing `uat`. Running `uat menu` at that point will report that the command is missing.
+
+The toolkit does not need TermuxBlack. You can comment out its entries while keeping the official Termux repositories and signature verification enabled. The following commands back up each affected traditional `.list` file before commenting out its TermuxBlack lines; other repository lines remain intact:
+
+```bash
+for file in "$PREFIX/etc/apt/sources.list" "$PREFIX"/etc/apt/sources.list.d/*.list; do
+  [ -f "$file" ] || continue
+  if grep -qi 'hax4us.github.io/TermuxBlack' "$file"; then
+    cp -n "$file" "$file.uat-backup"
+    sed -i '\|hax4us.github.io/TermuxBlack|s|^|# |' "$file"
+  fi
+done
+
+cd "$HOME/ultimate-android-toolkit"
+bash install-termux.sh --extras
+uat doctor
+uat menu
+```
+
+The backup has a `.uat-backup` suffix and is ignored as an APT source. To restore an affected source later, copy its backup over the same original file after the repository maintainer has resolved the signing-key issue. These commands handle `.list` files, not Deb822 `.sources` files; if the error persists, locate the remaining entry with `grep -Rni 'TermuxBlack' "$PREFIX/etc/apt"` and review that source format before editing it.
+
+If you keep TermuxBlack enabled, obtain any updated key through the repository maintainer's verified distribution instructions. Do not add `trusted=yes`, use unauthenticated package installation, or disable signature verification to work around the expired key.
+
+## Installer cannot be found
+
+`install-termux.sh` lives in the toolkit's top-level directory. If your prompt ends in `/scripts`, running `cd ultimate-android-toolkit` looks for a second copy inside that directory. Go straight to the checkout instead:
+
+```bash
+cd "$HOME/ultimate-android-toolkit"
+bash install-termux.sh --extras
+```
+
+Use `bash install-termux.sh`, since the file is not a command on your shell's search path. A successful install creates the `uat` command.

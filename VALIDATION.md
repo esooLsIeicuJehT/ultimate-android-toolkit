@@ -15,4 +15,4 @@ Core checks cover safe extraction, hashes/provenance, searches across chunk boun
 
 Not established by these checks: Android phone installation, Termux ARM64 dependency behavior, Android root/SELinux access, ADB/SSH connectivity, or licensed IDA execution. The IDA adapter has invocation/output tests and needs testing against the user's licensed installation. See docs/testing.md.
 
-GitHub repository creation was attempted using the connected account and rejected with HTTP 403, `Resource not accessible by integration`. No files were uploaded to the original repository. This source tree and its distribution ZIP are ready to upload to a separate repository once access is available.
+The toolkit is maintained in the separate `esooLsIeicuJehT/ultimate-android-toolkit` repository. Distribution files contain the toolkit source and provider scripts; they do not include analyzed APKs, private keystores, or the external tool distributions.

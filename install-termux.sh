@@ -16,7 +16,22 @@ for uat_option in "$@"; do
         *) echo "Usage: bash install-termux.sh [--extras] [--frida]" >&2; exit 1 ;;
     esac
 done
-pkg update -y
+if ! pkg update -y; then
+    cat >&2 <<'UAT_PACKAGE_ERROR'
+
+Package indexes could not be updated, so the toolkit has not been installed.
+Read the package error above before retrying.
+
+If it says EXPKEYSIG for hax4us.github.io/TermuxBlack, that third-party
+repository has an expired signing key. Disable its source or obtain an
+updated key from its maintainer; do not disable package signature checks.
+Recovery instructions: docs/termux.md (Expired TermuxBlack repository).
+
+For an unavailable official mirror, try termux-change-repo.
+Then run this installer again from the toolkit directory.
+UAT_PACKAGE_ERROR
+    exit 1
+fi
 # aapt supplies zipalign; aapt2 is its own subpackage. Use native ARM/ARM64 builds.
 pkg install -y python openjdk-21 apktool jadx apksigner aapt aapt2 binutils ripgrep unzip termux-tools
 if $uat_install_extras; then
