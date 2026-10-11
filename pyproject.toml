@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ultimate-android-toolkit"
+version = "0.1.0"
+description = "Termux-first APK analysis, editing, signing, and Android game research toolkit"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+uat = "uat.cli:main"
+
+[tool.setuptools]
+packages = ["uat", "uat.providers"]
+
+[tool.setuptools.package-data]
+"uat.providers" = ["*.java", "*.js"]

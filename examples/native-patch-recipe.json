@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "changes": [
+    {
+      "path": "lib/arm64-v8a/libexample.so",
+      "kind": "binary_patch",
+      "offset": "0x1000",
+      "find": "74 65 73 74",
+      "replace": "64 65 6d 6f",
+      "expected_matches": 1
+    }
+  ]
+}

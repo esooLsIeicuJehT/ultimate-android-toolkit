@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "changes": [
+    {
+      "path": "AndroidManifest.xml",
+      "kind": "xml_set_attribute",
+      "xpath": "./application",
+      "attribute": "android:label",
+      "expected": "@string/app_name",
+      "value": "My Test Build",
+      "expected_matches": 1
+    },
+    {
+      "path": "assets/config.json",
+      "kind": "text_replace",
+      "find": "\"theme\": \"light\"",
+      "replace": "\"theme\": \"dark\"",
+      "expected_matches": 1
+    }
+  ]
+}
