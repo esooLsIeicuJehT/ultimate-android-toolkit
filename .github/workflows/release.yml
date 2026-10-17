@@ -1,0 +1,81 @@
+name: Release downloads
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to package
+        required: true
+        default: v0.1.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Select and validate the release
+        env:
+          UAT_RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ ! "$UAT_RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Expected a stable version tag such as v0.1.0.' >&2
+            exit 1
+          fi
+          git rev-parse --verify "refs/tags/$UAT_RELEASE_TAG"
+          git checkout --detach "refs/tags/$UAT_RELEASE_TAG"
+          python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          tag = os.environ['UAT_RELEASE_TAG']
+          if tag != 'v' + version:
+              raise SystemExit('The tag must match the package version.')
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write('UAT_RELEASE_TAG=' + tag + '\n')
+              stream.write('UAT_RELEASE_VERSION=' + version + '\n')
+          PY
+      - name: Build source, wheel, Git bundle and checksums
+        run: |
+          uat_release_dir="$RUNNER_TEMP/uat-release"
+          mkdir -p "$uat_release_dir"
+          git archive --format=zip --prefix=ultimate-android-toolkit/ \
+            --output="$uat_release_dir/ultimate-android-toolkit-$UAT_RELEASE_TAG.zip" \
+            "refs/tags/$UAT_RELEASE_TAG"
+          python -m pip wheel --no-deps --wheel-dir "$uat_release_dir" .
+          git bundle create "$uat_release_dir/ultimate-android-toolkit-$UAT_RELEASE_TAG.bundle" --all
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          directory = Path(os.environ['RUNNER_TEMP']) / 'uat-release'
+          checksum = directory / ('ultimate-android-toolkit-' + os.environ['UAT_RELEASE_TAG'] + '.sha256')
+          lines = [hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name
+                   for path in sorted(directory.iterdir()) if path.is_file() and path != checksum]
+          checksum.write_text('\n'.join(lines) + '\n')
+          PY
+      - name: Attach downloads and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view "$UAT_RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$UAT_RELEASE_TAG" --verify-tag --draft \
+              --title "$UAT_RELEASE_TAG — Ultimate Android Toolkit" --generate-notes
+          fi
+          gh release upload "$UAT_RELEASE_TAG" "$RUNNER_TEMP/uat-release/"* --clobber
+          gh release edit "$UAT_RELEASE_TAG" --draft=false
